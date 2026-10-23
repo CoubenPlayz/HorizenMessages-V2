@@ -100,6 +100,17 @@ input,button{font-family:inherit}button{font-weight:550;letter-spacing:-.01em}
 .row.onl::before{box-shadow:0 0 0 2px #0b1020,0 0 0 4px #4fd1a5}
 #inc{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:rgba(5,8,15,.78);backdrop-filter:blur(8px)}
 #inc .card{text-align:center;max-width:320px}#inc .card>div:last-child{justify-content:center}
+/* ---- settings, avatars, add members, toast ---- */
+.row::before{background:var(--av,var(--grad)) center/cover}
+#who{cursor:pointer;display:flex;align-items:center;gap:9px}
+#who::before{content:"";width:30px;height:30px;flex:none;border-radius:50%;background:var(--av,var(--grad)) center/cover;box-shadow:0 0 12px rgba(124,92,255,.5)}
+.ov{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:rgba(5,8,15,.78);backdrop-filter:blur(8px)}
+.ov .card{display:flex;flex-direction:column;gap:10px;min-width:280px;max-width:340px;max-height:85vh;overflow:auto}
+.bigav{width:96px;height:96px;border-radius:50%;margin:0 auto;background:var(--av,var(--grad)) center/cover;box-shadow:0 0 28px rgba(124,92,255,.55)}
+#sun{text-align:center;font-weight:600;font-size:16px;color:var(--tx)}
+.pk{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer}.pk:hover{background:rgba(255,255,255,.06)}
+.pk input{width:auto}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:20;padding:10px 16px;border-radius:999px;background:#161e36;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.5)}
 </style></head><body>
 
 <section id="auth" hidden>
@@ -131,7 +142,7 @@ input,button{font-family:inherit}button{font-weight:550;letter-spacing:-.01em}
  <main id="main">
   <div id="head" hidden>
    <button class="g" id="back">Back</button><div style="flex:1;min-width:0"><b id="cn"></b><div id="st"></div></div>
-   <button class="g" id="ca">Call</button><button class="g" id="cv">Video call</button>
+   <button class="g" id="ad" title="Add people" hidden>＋👤</button> <button class="g" id="ca">Call</button><button class="g" id="cv">Video call</button>
   </div>
   <div id="msgs"><div class="empty">Choose a chat, or add a friend to start one.</div></div>
   <div id="rp" hidden></div>
@@ -139,6 +150,11 @@ input,button{font-family:inherit}button{font-weight:550;letter-spacing:-.01em}
  </main>
 </div>
 
+<div id="set" class="ov" hidden><div class="card"><h1>Settings</h1><div id="sav" class="bigav"></div><div id="sun"></div>
+ <button class="g" id="sup">Change profile icon</button><input type="file" id="sf" accept="image/*" hidden>
+ <button class="g" id="sn">Enable notifications</button><button id="sx">Done</button><button class="r" id="slo">Log out</button></div></div>
+<div id="pk" class="ov" hidden><div class="card"><h1>Add people</h1><div id="pl"></div><button id="pa">Add to group</button><button class="g" id="pc">Cancel</button></div></div>
+<div id="toast" hidden></div>
 <div id="inc" hidden><div class="card"><h1 id="in"></h1><div class="mut" id="it"></div><div style="display:flex;gap:8px"><button id="ac">Answer</button><button class="r" id="dc">Decline</button></div></div></div>
 
 <div id="call" hidden>
@@ -195,14 +211,15 @@ boot();
 async function start(u){
   if(started)return;started=true;me=u;
   $('auth').hidden=true;$('app').hidden=false;
-  await loadProfiles();$('who').textContent=P[me.id]?.username||'Me';
+  await loadProfiles();$('who').textContent=P[me.id]?.username||'Me';paintSet();document.addEventListener('click',()=>{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission().then(paintSet)},{once:true});
   await Promise.all([loadConvs(),loadFriends()]);
   sb.channel('db')
-   .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},p=>{if(p.new.conversation_id===cur)addMsg(p.new)})
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},p=>{if(p.new.conversation_id===cur)addMsg(p.new);notifyMsg(p.new)})
    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'messages'},p=>{if(p.new.conversation_id===cur)addMsg(p.new)})
+   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},async()=>{await loadProfiles();loadConvs();loadFriends();paintSet()})
    .on('postgres_changes',{event:'*',schema:'public',table:'reactions'},()=>{if(cur)loadReacts()})
    .on('postgres_changes',{event:'*',schema:'public',table:'friendships'},loadFriends)
-   .on('postgres_changes',{event:'INSERT',schema:'public',table:'conversation_members'},loadConvs).subscribe();
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'conversation_members'},async p=>{await loadConvs();onAdded(p.new)}).subscribe();
   sb.channel('u:'+me.id).on('broadcast',{event:'sig'},({payload})=>onSig(payload)).subscribe();
   const pr=sb.channel('online',{config:{presence:{key:me.id}}});
   pr.on('presence',{event:'sync'},()=>{online=new Set(Object.keys(pr.presenceState()));paint()}).subscribe(st=>{if(st==='SUBSCRIBED')pr.track({at:Date.now()})});
@@ -221,7 +238,7 @@ async function loadFriends(){
   const {data}=await sb.from('friendships').select('*');fr=data||[];
   $('fl').innerHTML=fr.map(f=>{
     const other=f.requester===me.id?f.addressee:f.requester;
-    if(f.status==='accepted')return `<div class="row"><span>${esc(uname(other))}</span><button data-dm="${other}">Message</button></div>`;
+    if(f.status==='accepted')return `<div class="row" style="${av(other)}"><span>${esc(uname(other))}</span><button data-dm="${other}">Message</button></div>`;
     if(f.addressee===me.id)return `<div class="row"><span>${esc(uname(other))} wants to be friends</span><button data-ok="${f.id}">Accept</button></div>`;
     return `<div class="row"><span>${esc(uname(other))}</span><span class="mut">Request sent</span></div>`;
   }).join('')||'<div class="pad mut">No friends yet. Add one by username.</div>';
@@ -244,7 +261,7 @@ async function loadConvs(){
   const {data}=await sb.from('conversations').select('*,conversation_members(user_id)').order('created_at',{ascending:false});
   convs=data||[];
   $('chats').innerHTML='<div class="pad"><button class="g" id="ng">New group</button></div>'+
-    (convs.map(c=>`<div class="row ${c.id===cur?'on':''}" data-c="${c.id}"><span>${esc(cname(c))}</span>${c.is_group?'<small class="mut">Group</small>':''}</div>`).join('')||'<div class="pad mut">No chats yet.</div>');
+    (convs.map(c=>`<div class="row ${c.id===cur?'on':''}" data-c="${c.id}" style="${c.is_group?'':av(other(c))}"><span>${esc(cname(c))}</span>${c.is_group?'<small class="mut">Group</small>':''}</div>`).join('')||'<div class="pad mut">No chats yet.</div>');
   $('ng').onclick=newGroup;paint();
 }
 const other=c=>c.conversation_members.map(m=>m.user_id).find(i=>i!==me.id);
@@ -295,7 +312,7 @@ async function loadReacts(){
 async function openConv(id){
   cur=id;const c=convs.find(c=>c.id===id);rep=edit=null;typing=false;bar();
   $('app').classList.add('open');$('head').hidden=false;$('send').hidden=false;
-  $('cn').textContent=cname(c);$('ca').hidden=$('cv').hidden=c.is_group;
+  $('cn').textContent=cname(c);$('ca').hidden=$('cv').hidden=c.is_group;$('ad').hidden=!c.is_group;
   document.querySelectorAll('#chats .row').forEach(r=>r.classList.toggle('on',r.dataset.c===id));
   if(tch)sb.removeChannel(tch);
   tch=sb.channel('typing:'+id);
@@ -397,7 +414,7 @@ async function flush(){for(const c of pend)await pc.addIceCandidate(c).catch(()=
 async function onSig(p){
   if(p.t==='offer'){
     if(pc||inc)return sig(p.from,{t:'busy'});
-    inc=p;$('in').textContent=uname(p.from);$('it').textContent=p.video?'Incoming video call':'Incoming voice call';$('inc').hidden=false;
+    inc=p;ping(uname(p.from),p.video?'Incoming video call':'Incoming voice call','call');$('in').textContent=uname(p.from);$('it').textContent=p.video?'Incoming video call':'Incoming voice call';$('inc').hidden=false;
   }else if(p.t==='answer'&&pc&&p.from===peer){await pc.setRemoteDescription(p.sdp);await flush()}
   else if(p.t==='ice'){pc&&pc.remoteDescription?pc.addIceCandidate(p.c).catch(()=>{}):pend.push(p.c)}
   else if(p.t==='end'&&inc&&p.from===inc.from){inc=null;pend=[];$('inc').hidden=true}
@@ -417,5 +434,69 @@ function hang(notify){
   pc=stream=peer=null;pend=[];$('call').hidden=true;$('rv').srcObject=$('lv').srcObject=null;
 }
 $('hu').onclick=()=>hang(true);
+
+/* ---------- Settings, profile icon, add members, notifications ---------- */
+const av=id=>{const u=P[id]&&P[id].avatar_url;return u&&/^https:\/\//.test(u)?`--av:url("${u.replace(/["\\()\s]/g,'')}")`:''};
+function paintSet(){
+  const u=av(me.id);$('who').setAttribute('style',u);$('sav').setAttribute('style',u);$('sun').textContent=uname(me.id);
+  $('sn').textContent=!('Notification' in window)?'Notifications not supported':Notification.permission==='granted'?'Notifications on ✓':Notification.permission==='denied'?'Notifications blocked in browser settings':'Enable notifications';
+}
+$('who').onclick=()=>{paintSet();$('set').hidden=false};
+$('sx').onclick=()=>$('set').hidden=true;
+$('slo').onclick=()=>$('lo').click();
+$('sn').onclick=async()=>{if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();paintSet()};
+$('sup').onclick=()=>$('sf').click();
+$('sf').onchange=async()=>{
+  const f=$('sf').files[0];$('sf').value='';if(!f)return;
+  try{
+    const img=await createImageBitmap(f),s=Math.min(img.width,img.height),cv=document.createElement('canvas');cv.width=cv.height=256;
+    cv.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,256,256);
+    const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',.85));
+    const path=`${me.id}/${Date.now()}.jpg`;
+    const {error}=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg'});if(error)throw error;
+    const url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+    const {error:e2}=await sb.from('profiles').update({avatar_url:url}).eq('id',me.id);if(e2)throw e2;
+    P[me.id].avatar_url=url;paintSet();loadConvs();loadFriends();
+  }catch(e){alert('Couldn’t update your icon: '+(e.message||e))}
+};
+$('ad').onclick=()=>{
+  const c=convs.find(c=>c.id===cur);if(!c||!c.is_group)return;
+  const have=new Set(c.conversation_members.map(m=>m.user_id));
+  const fl=fr.filter(f=>f.status==='accepted').map(f=>f.requester===me.id?f.addressee:f.requester).filter(i=>!have.has(i));
+  $('pl').innerHTML=fl.map(i=>`<label class="pk"><input type="checkbox" value="${i}"><span>${esc(uname(i))}</span></label>`).join('')||'<div class="mut">All your friends are already in this group.</div>';
+  $('pk').hidden=false;
+};
+$('pc').onclick=()=>$('pk').hidden=true;
+$('pa').onclick=async()=>{
+  const ids=[...$('pl').querySelectorAll('input:checked')].map(i=>i.value);if(!ids.length)return;
+  const {error}=await sb.from('conversation_members').insert(ids.map(user_id=>({conversation_id:cur,user_id})));
+  if(error)return alert(error.message);
+  $('pk').hidden=true;
+  await sb.from('messages').insert({conversation_id:cur,sender_id:me.id,body:'➕ '+uname(me.id)+' added '+ids.map(uname).join(', ')});
+  loadConvs();
+};
+let unread=0;const base=document.title;
+const away=()=>document.hidden||!document.hasFocus();
+const seenTab=()=>{unread=0;document.title=base};
+addEventListener('focus',seenTab);document.addEventListener('visibilitychange',()=>{if(!document.hidden)seenTab()});
+function toast(t){const e=$('toast');e.textContent=t;e.hidden=false;clearTimeout(e._t);e._t=setTimeout(()=>e.hidden=true,4000)}
+// Browser notification, only when you are not looking at this tab
+function ping(title,body,tag,conv){
+  if(!away())return;
+  unread++;document.title=`(${unread}) ${base}`;
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const n=new Notification(title,{body,tag});
+  n.onclick=()=>{window.focus();n.close();if(conv)openConv(conv)};
+}
+function notifyMsg(m){
+  if(m.sender_id===me.id||m.deleted)return;
+  const c=convs.find(c=>c.id===m.conversation_id),g=c&&c.is_group;
+  ping(g?cname(c):uname(m.sender_id),(g?uname(m.sender_id)+': ':'')+(m.body||'📎 '+(m.file_name||'File')),'c'+m.conversation_id,m.conversation_id);
+}
+function onAdded(r){
+  if(r.user_id!==me.id)return;const c=convs.find(c=>c.id===r.conversation_id);
+  if(!c||!c.is_group||c.created_by===me.id)return;
+  if(away())ping('Added to a group','You were added to “'+c.name+'”','c'+c.id,c.id);else toast('You were added to “'+c.name+'”');
+}
 </script>
 </body></html>
