@@ -111,6 +111,15 @@ input,button{font-family:inherit}button{font-weight:550;letter-spacing:-.01em}
 .pk{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer}.pk:hover{background:rgba(255,255,255,.06)}
 .pk input{width:auto}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:20;padding:10px 16px;border-radius:999px;background:#161e36;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+/* ---- eaglercraft party cards + game panel ---- */
+.pty{display:flex;flex-direction:column;gap:3px;min-width:220px;padding:4px 0}
+.pty b{font-size:15px}.pty span{font-size:12px;opacity:.8}.pty div{display:flex;gap:6px;margin-top:6px}
+.pty button{padding:6px 12px;font-size:13px;position:static}
+.m.me .pty button.g{background:rgba(255,255,255,.18);color:#fff}
+#pg{position:fixed;top:0;right:0;bottom:0;width:min(100vw,68vw);z-index:15;display:flex;flex-direction:column;background:#070a14;border-left:1px solid var(--line);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+#pg .top{padding:8px 12px;gap:8px}#pg .top b{flex:1}
+#pgf{flex:1;width:100%;border:0;background:#000}
+@media(max-width:700px){#pg{width:100vw}}
 </style></head><body>
 
 <section id="auth" hidden>
@@ -122,7 +131,7 @@ input,button{font-family:inherit}button{font-weight:550;letter-spacing:-.01em}
   <button id="li">Log in</button>
   <button id="su" class="g">Create account</button>
   <div class="mut" style="text-align:center">or</div>
-  <button id="gg" class="g" style="display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
+  <button id="gh" class="g" style="display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>Continue with GitHub</button>
   <div id="am" class="mut" role="status"></div>
  </div>
 </section>
@@ -156,6 +165,7 @@ input,button{font-family:inherit}button{font-weight:550;letter-spacing:-.01em}
  <button class="g" id="sup">Change profile icon</button><input type="file" id="sf" accept="image/*" hidden>
  <button class="g" id="sn">Enable notifications</button><button id="sx">Done</button><button class="r" id="slo">Log out</button></div></div>
 <div id="pk" class="ov" hidden><div class="card"><h1>Add people</h1><div id="pl"></div><button id="pa">Add to group</button><button class="g" id="pc">Cancel</button></div></div>
+<div id="pg" hidden><div class="top"><b id="pgt"></b><button class="g" id="pgo">Open in new tab</button><button class="r" id="pgx">Close</button></div><iframe id="pgf" title="Eaglercraft" allow="fullscreen; autoplay; keyboard-map; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
 <div id="toast" hidden></div>
 <div id="inc" hidden><div class="card"><h1 id="in"></h1><div class="mut" id="it"></div><div style="display:flex;gap:8px"><button id="ac">Answer</button><button class="r" id="dc">Decline</button></div></div></div>
 
@@ -336,11 +346,15 @@ function addMsg(m){
   d.className='m'+(m.sender_id===me.id?' me':'');
   const q=m.reply_to&&M[m.reply_to],rs={};(R[m.id]||[]).forEach(r=>(rs[r.emoji]=rs[r.emoji]||[]).push(r.user_id));
   let h=`<small>${esc(uname(m.sender_id))} · ${new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}${m.edited?' · edited':''}</small>`;
-  if(q)h+=`<div class="q">${esc(uname(q.sender_id))}: ${esc(q.deleted?'Deleted message':q.body||q.file_name||'File')}</div>`;
+  if(q)h+=`<div class="q">${esc(uname(q.sender_id))}: ${esc(q.deleted?'Deleted message':pretty(q.body)||q.file_name||'File')}</div>`;
   if(m.deleted)h+='<i class="mut">Message deleted</i>';
   else{
     if(m.file_url&&/^https:\/\//.test(m.file_url))h+=/^image\//.test(m.file_type||'')?`<a href="${esc(m.file_url)}" target="_blank" rel="noopener"><img src="${esc(m.file_url)}" alt=""></a>`:`<a class="fl" href="${esc(m.file_url)}" target="_blank" rel="noopener">📎 ${esc(m.file_name||'File')}</a>`;
-    if(m.body)h+=`<div>${esc(m.body)}</div>`;
+    const pm=m.body&&m.body.match(/^::party::([a-z0-9]{3,32})::(.*)$/);
+    if(pm)h+=`<div class="pty"><b>🎮 ${esc(pm[2])}</b><span>Eaglercraft party · code ${pm[1]}</span><div><button data-a="play" data-c="${pm[1]}">Play here</button><button class="g" data-a="tab" data-c="${pm[1]}">New tab</button></div></div>`;
+    else if(m.body&&/^::game::/.test(m.body)){const g=m.body.match(/^::game::(\S+?)::(.*)$/),u=g&&gameUrl(g[1]);
+      h+=u?`<div class="pty"><b>🕹️ ${esc(g[2])}</b><span>${esc(new URL(u).host)}</span><div><button data-a="game" data-r="${esc(g[1])}" data-t="${esc(g[2])}">Play here</button><button class="g" data-a="gtab" data-r="${esc(g[1])}">New tab</button></div></div>`:`<div>${esc(m.body)}</div>`}
+    else if(m.body)h+=`<div>${esc(m.body)}</div>`;
     h+='<button class="mb" data-a="menu" aria-label="Message actions">⋯</button>';
   }
   const k=Object.keys(rs);
@@ -358,8 +372,12 @@ $('msgs').onclick=e=>{
   document.querySelectorAll('.pop').forEach(p=>p.remove());
   if(!t||!d)return;const m=M[d.dataset.id];
   if(t.dataset.a==='re')return react(m.id,t.dataset.e);
+  if(t.dataset.a==='play')return playParty(t.dataset.c);
+  if(t.dataset.a==='tab')return void window.open(partyUrl(t.dataset.c),'_blank','noopener');
+  if(t.dataset.a==='game')return playGame(t.dataset.r,t.dataset.t);
+  if(t.dataset.a==='gtab'){const u=gameUrl(t.dataset.r);return void(u&&window.open(u,'_blank','noopener'))}
   const p=document.createElement('div');p.className='pop';
-  p.innerHTML=EM.map(x=>`<span data-p="${x}">${x}</span>`).join('')+'<button class="g" data-p="reply">Reply</button>'+(m.sender_id===me.id?(m.body?'<button class="g" data-p="edit">Edit</button>':'')+'<button class="g" data-p="del">Delete</button>':'');
+  p.innerHTML=EM.map(x=>`<span data-p="${x}">${x}</span>`).join('')+'<button class="g" data-p="reply">Reply</button>'+(m.sender_id===me.id?(m.body&&!/^::(party|game)::/.test(m.body)?'<button class="g" data-p="edit">Edit</button>':'')+'<button class="g" data-p="del">Delete</button>':'');
   p.onclick=async ev=>{
     const a=ev.target.dataset.p;if(!a)return;p.remove();
     if(EM.includes(a))react(m.id,a);
@@ -372,6 +390,7 @@ $('msgs').onclick=e=>{
 $('send').onsubmit=async e=>{
   e.preventDefault();const body=$('mi').value.trim();if(!body||!cur)return;$('mi').value='';
   if(edit){const id=edit.id;edit=null;bar();const {error}=await sb.from('messages').update({body,edited:true}).eq('id',id);if(error)alert(error.message);return}
+  if(await eagler(body)||await gameCmd(body))return;
   const row={conversation_id:cur,sender_id:me.id,body};if(rep)row.reply_to=rep.id;rep=null;bar();
   const {error}=await sb.from('messages').insert(row);if(error)alert(error.message);
 };
@@ -519,16 +538,85 @@ function ping(title,body,tag,conv){
 function notifyMsg(m){
   if(m.sender_id===me.id||m.deleted)return;
   const c=convs.find(c=>c.id===m.conversation_id),g=c&&c.is_group;
-  ping(g?cname(c):uname(m.sender_id),(g?uname(m.sender_id)+': ':'')+(m.body||'📎 '+(m.file_name||'File')),'c'+m.conversation_id,m.conversation_id);
+  ping(g?cname(c):uname(m.sender_id),(g?uname(m.sender_id)+': ':'')+(pretty(m.body)||'📎 '+(m.file_name||'File')),'c'+m.conversation_id,m.conversation_id);
 }
 function onAdded(r){
   if(r.user_id!==me.id)return;const c=convs.find(c=>c.id===r.conversation_id);
   if(!c||!c.is_group||c.created_by===me.id)return;
   if(away())ping('Added to a group','You were added to “'+c.name+'”','c'+c.id,c.id);else toast('You were added to “'+c.name+'”');
 }
-$('gg').onclick=async()=>{
-  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+$('gh').onclick=async()=>{
+  const {error}=await sb.auth.signInWithOAuth({provider:'github',options:{redirectTo:location.origin+location.pathname}});
   if(error)note(error.message);
 };
+
+/* ---------- @eaglercraft party create <event name> [| server] ---------- */
+const EAGLER_URL='https://minecraft3.33sjayakumar.workers.dev'; // your Eaglercraft launcher
+const DEFAULT_SERVER='zentic.cc';                                // used when no server is given
+const EG_SB='https://uwpcgccammspgzocjsco.supabase.co',EG_KEY='sb_publishable_VovyqA7vY-IVd2qke-sCRg_l1LdpMMV';
+const EG_ALPHA='abcdefghjkmnpqrstuvwxyz23456789';
+const partyUrl=c=>`${EAGLER_URL}/party=${c}`;
+const pretty=b=>{const m=b&&b.match(/^::party::([a-z0-9]{3,32})::(.*)$/),g=b&&b.match(/^::game::(\S+?)::(.*)$/);return m?'🎮 Party: '+m[2]:g?'🕹️ '+g[2]:b};
+function egServer(v){let s=v.trim();if(!/^wss?:\/\//i.test(s))s='wss://'+s;try{const u=new URL(s);return /^wss?:$/.test(u.protocol)?u.href:null}catch{return null}}
+async function makeParty(name,server){
+  for(let i=0;i<5;i++){
+    const code=Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>EG_ALPHA[b%EG_ALPHA.length]).join('');
+    // same request your Create-a-party page makes (anon key), so the existing table rules apply
+    const r=await fetch(EG_SB+'/rest/v1/parties',{method:'POST',headers:{apikey:EG_KEY,Authorization:'Bearer '+EG_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({code,server,name})});
+    if(r.status===409)continue;
+    return r.ok?code:null;
+  }
+  return null;
+}
+async function eagler(text){
+  const m=text.match(/^@eaglercraft\b\s*(.*)$/i);if(!m)return false;
+  const mm=m[1].match(/^party\s+create\s+(.+)$/i);
+  if(!mm){toast('Try: @eaglercraft party create Friday build night');return true}
+  const [nameRaw,srvRaw]=mm[1].split('|'),name=nameRaw.trim().replace(/::/g,' ').slice(0,40);
+  const server=egServer(srvRaw&&srvRaw.trim()?srvRaw:DEFAULT_SERVER);
+  if(!name)return toast('Give your party a name.'),true;
+  if(!server)return toast('That server address doesn’t look right.'),true;
+  toast('Creating your party…');
+  const code=await makeParty(name,server);
+  if(!code)return toast('Couldn’t create the party. Try again.'),true;
+  // the invite is a normal message, so everyone in the group (or the other person in a DM) gets it and is notified
+  const {error}=await sb.from('messages').insert({conversation_id:cur,sender_id:me.id,body:`::party::${code}::${name}`});
+  if(error)alert(error.message);
+  return true;
+}
+function playParty(code){openPanel(partyUrl(code),'🎮 Eaglercraft · '+code,false)}
+$('pgx').onclick=()=>{$('pgf').src='about:blank';$('pg').hidden=true};
+
+/* ---------- @game <name or site> : play in the side panel ---------- */
+// Add your own shortcuts here: key (what people type) -> title + url
+const GAMES={
+  gd:{title:'Geometry Dash',url:'https://gd.horizensearch.com'},
+  bloxd:{title:'Bloxd.io',url:'https://bloxd.io'},
+  minecraft:{title:'Minecraft (Eaglercraft)',url:EAGLER_URL},
+};
+const gameUrl=r=>GAMES[r]?GAMES[r].url:(/^https:\/\/[^\s:]+$/i.test(r)?r:null);
+function gameRef(tok){
+  tok=tok.toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').replace(/\/$/,'');
+  if(GAMES[tok])return {ref:tok,title:GAMES[tok].title};
+  for(const [k,g] of Object.entries(GAMES))if(new URL(g.url).host===tok)return {ref:k,title:g.title};
+  if(/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/[^\s:]*)?$/.test(tok))return {ref:'https://'+tok,title:tok.split('/')[0]};
+  return null;
+}
+async function gameCmd(text){
+  const m=text.match(/^@game\b\s*(\S*)/i);if(!m)return false;
+  if(!m[1]||/^(list|help)$/i.test(m[1]))return toast('Try '+Object.keys(GAMES).map(k=>'@game '+k).join(' · ')+' · or any site like @game 2048.org'),true;
+  const g=gameRef(m[1]);if(!g)return toast('Try @game gd, @game bloxd.io or @game list'),true;
+  const {error}=await sb.from('messages').insert({conversation_id:cur,sender_id:me.id,body:`::game::${g.ref}::${g.title}`});
+  if(error)alert(error.message);
+  return true;
+}
+function openPanel(url,title,boxed){
+  $('pgt').textContent=title;$('pgo').onclick=()=>window.open(url,'_blank','noopener');
+  const f=$('pgf');f.removeAttribute('src');
+  // sites that aren't in the shortcut list above run sandboxed
+  if(boxed)f.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups');else f.removeAttribute('sandbox');
+  f.src=url;$('pg').hidden=false;
+}
+function playGame(ref,title){const u=gameUrl(ref);if(u)openPanel(u,'🕹️ '+(title||new URL(u).host),!GAMES[ref])}
 </script>
 </body></html>
