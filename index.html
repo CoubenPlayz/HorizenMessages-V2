@@ -352,6 +352,8 @@ function addMsg(m){
     if(m.file_url&&/^https:\/\//.test(m.file_url))h+=/^image\//.test(m.file_type||'')?`<a href="${esc(m.file_url)}" target="_blank" rel="noopener"><img src="${esc(m.file_url)}" alt=""></a>`:`<a class="fl" href="${esc(m.file_url)}" target="_blank" rel="noopener">📎 ${esc(m.file_name||'File')}</a>`;
     const pm=m.body&&m.body.match(/^::party::([a-z0-9]{3,32})::(.*)$/);
     if(pm)h+=`<div class="pty"><b>🎮 ${esc(pm[2])}</b><span>Eaglercraft party · code ${pm[1]}</span><div><button data-a="play" data-c="${pm[1]}">Play here</button><button class="g" data-a="tab" data-c="${pm[1]}">New tab</button></div></div>`;
+    else if(m.body&&/^::game::/.test(m.body)){const g=m.body.match(/^::game::(\S+?)::(.*)$/),u=g&&gameUrl(g[1]);
+      h+=u?`<div class="pty"><b>🕹️ ${esc(g[2])}</b><span>${esc(new URL(u).host)}</span><div><button data-a="game" data-r="${esc(g[1])}" data-t="${esc(g[2])}">Play here</button><button class="g" data-a="gtab" data-r="${esc(g[1])}">New tab</button></div></div>`:`<div>${esc(m.body)}</div>`}
     else if(m.body)h+=`<div>${esc(m.body)}</div>`;
     h+='<button class="mb" data-a="menu" aria-label="Message actions">⋯</button>';
   }
@@ -372,8 +374,10 @@ $('msgs').onclick=e=>{
   if(t.dataset.a==='re')return react(m.id,t.dataset.e);
   if(t.dataset.a==='play')return playParty(t.dataset.c);
   if(t.dataset.a==='tab')return void window.open(partyUrl(t.dataset.c),'_blank','noopener');
+  if(t.dataset.a==='game')return playGame(t.dataset.r,t.dataset.t);
+  if(t.dataset.a==='gtab'){const u=gameUrl(t.dataset.r);return void(u&&window.open(u,'_blank','noopener'))}
   const p=document.createElement('div');p.className='pop';
-  p.innerHTML=EM.map(x=>`<span data-p="${x}">${x}</span>`).join('')+'<button class="g" data-p="reply">Reply</button>'+(m.sender_id===me.id?(m.body&&!/^::party::/.test(m.body)?'<button class="g" data-p="edit">Edit</button>':'')+'<button class="g" data-p="del">Delete</button>':'');
+  p.innerHTML=EM.map(x=>`<span data-p="${x}">${x}</span>`).join('')+'<button class="g" data-p="reply">Reply</button>'+(m.sender_id===me.id?(m.body&&!/^::(party|game)::/.test(m.body)?'<button class="g" data-p="edit">Edit</button>':'')+'<button class="g" data-p="del">Delete</button>':'');
   p.onclick=async ev=>{
     const a=ev.target.dataset.p;if(!a)return;p.remove();
     if(EM.includes(a))react(m.id,a);
@@ -386,7 +390,7 @@ $('msgs').onclick=e=>{
 $('send').onsubmit=async e=>{
   e.preventDefault();const body=$('mi').value.trim();if(!body||!cur)return;$('mi').value='';
   if(edit){const id=edit.id;edit=null;bar();const {error}=await sb.from('messages').update({body,edited:true}).eq('id',id);if(error)alert(error.message);return}
-  if(await eagler(body))return;
+  if(await eagler(body)||await gameCmd(body))return;
   const row={conversation_id:cur,sender_id:me.id,body};if(rep)row.reply_to=rep.id;rep=null;bar();
   const {error}=await sb.from('messages').insert(row);if(error)alert(error.message);
 };
@@ -552,7 +556,7 @@ const DEFAULT_SERVER='zentic.cc';                                // used when no
 const EG_SB='https://uwpcgccammspgzocjsco.supabase.co',EG_KEY='sb_publishable_VovyqA7vY-IVd2qke-sCRg_l1LdpMMV';
 const EG_ALPHA='abcdefghjkmnpqrstuvwxyz23456789';
 const partyUrl=c=>`${EAGLER_URL}/party=${c}`;
-const pretty=b=>{const m=b&&b.match(/^::party::([a-z0-9]{3,32})::(.*)$/);return m?'🎮 Party: '+m[2]:b};
+const pretty=b=>{const m=b&&b.match(/^::party::([a-z0-9]{3,32})::(.*)$/),g=b&&b.match(/^::game::(\S+?)::(.*)$/);return m?'🎮 Party: '+m[2]:g?'🕹️ '+g[2]:b};
 function egServer(v){let s=v.trim();if(!/^wss?:\/\//i.test(s))s='wss://'+s;try{const u=new URL(s);return /^wss?:$/.test(u.protocol)?u.href:null}catch{return null}}
 async function makeParty(name,server){
   for(let i=0;i<5;i++){
@@ -580,10 +584,39 @@ async function eagler(text){
   if(error)alert(error.message);
   return true;
 }
-function playParty(code){
-  $('pgt').textContent='🎮 Eaglercraft · '+code;$('pgo').onclick=()=>window.open(partyUrl(code),'_blank','noopener');
-  $('pgf').src=partyUrl(code);$('pg').hidden=false;
-}
+function playParty(code){openPanel(partyUrl(code),'🎮 Eaglercraft · '+code,false)}
 $('pgx').onclick=()=>{$('pgf').src='about:blank';$('pg').hidden=true};
+
+/* ---------- @game <name or site> : play in the side panel ---------- */
+// Add your own shortcuts here: key (what people type) -> title + url
+const GAMES={
+  gd:{title:'Geometry Dash',url:'https://gd.horizensearch.com'},
+  bloxd:{title:'Bloxd.io',url:'https://bloxd.io'},
+  minecraft:{title:'Minecraft (Eaglercraft)',url:EAGLER_URL},
+};
+const gameUrl=r=>GAMES[r]?GAMES[r].url:(/^https:\/\/[^\s:]+$/i.test(r)?r:null);
+function gameRef(tok){
+  tok=tok.toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').replace(/\/$/,'');
+  if(GAMES[tok])return {ref:tok,title:GAMES[tok].title};
+  for(const [k,g] of Object.entries(GAMES))if(new URL(g.url).host===tok)return {ref:k,title:g.title};
+  if(/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/[^\s:]*)?$/.test(tok))return {ref:'https://'+tok,title:tok.split('/')[0]};
+  return null;
+}
+async function gameCmd(text){
+  const m=text.match(/^@game\b\s*(\S*)/i);if(!m)return false;
+  if(!m[1]||/^(list|help)$/i.test(m[1]))return toast('Try '+Object.keys(GAMES).map(k=>'@game '+k).join(' · ')+' · or any site like @game 2048.org'),true;
+  const g=gameRef(m[1]);if(!g)return toast('Try @game gd, @game bloxd.io or @game list'),true;
+  const {error}=await sb.from('messages').insert({conversation_id:cur,sender_id:me.id,body:`::game::${g.ref}::${g.title}`});
+  if(error)alert(error.message);
+  return true;
+}
+function openPanel(url,title,boxed){
+  $('pgt').textContent=title;$('pgo').onclick=()=>window.open(url,'_blank','noopener');
+  const f=$('pgf');f.removeAttribute('src');
+  // sites that aren't in the shortcut list above run sandboxed
+  if(boxed)f.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups');else f.removeAttribute('sandbox');
+  f.src=url;$('pg').hidden=false;
+}
+function playGame(ref,title){const u=gameUrl(ref);if(u)openPanel(u,'🕹️ '+(title||new URL(u).host),!GAMES[ref])}
 </script>
 </body></html>
