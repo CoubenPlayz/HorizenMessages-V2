@@ -111,6 +111,15 @@ input,button{font-family:inherit}button{font-weight:550;letter-spacing:-.01em}
 .pk{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer}.pk:hover{background:rgba(255,255,255,.06)}
 .pk input{width:auto}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:20;padding:10px 16px;border-radius:999px;background:#161e36;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+/* ---- eaglercraft party cards + game panel ---- */
+.pty{display:flex;flex-direction:column;gap:3px;min-width:220px;padding:4px 0}
+.pty b{font-size:15px}.pty span{font-size:12px;opacity:.8}.pty div{display:flex;gap:6px;margin-top:6px}
+.pty button{padding:6px 12px;font-size:13px;position:static}
+.m.me .pty button.g{background:rgba(255,255,255,.18);color:#fff}
+#pg{position:fixed;top:0;right:0;bottom:0;width:min(100vw,68vw);z-index:15;display:flex;flex-direction:column;background:#070a14;border-left:1px solid var(--line);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+#pg .top{padding:8px 12px;gap:8px}#pg .top b{flex:1}
+#pgf{flex:1;width:100%;border:0;background:#000}
+@media(max-width:700px){#pg{width:100vw}}
 </style></head><body>
 
 <section id="auth" hidden>
@@ -156,6 +165,7 @@ input,button{font-family:inherit}button{font-weight:550;letter-spacing:-.01em}
  <button class="g" id="sup">Change profile icon</button><input type="file" id="sf" accept="image/*" hidden>
  <button class="g" id="sn">Enable notifications</button><button id="sx">Done</button><button class="r" id="slo">Log out</button></div></div>
 <div id="pk" class="ov" hidden><div class="card"><h1>Add people</h1><div id="pl"></div><button id="pa">Add to group</button><button class="g" id="pc">Cancel</button></div></div>
+<div id="pg" hidden><div class="top"><b id="pgt"></b><button class="g" id="pgo">Open in new tab</button><button class="r" id="pgx">Close</button></div><iframe id="pgf" title="Eaglercraft" allow="fullscreen; autoplay; keyboard-map; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
 <div id="toast" hidden></div>
 <div id="inc" hidden><div class="card"><h1 id="in"></h1><div class="mut" id="it"></div><div style="display:flex;gap:8px"><button id="ac">Answer</button><button class="r" id="dc">Decline</button></div></div></div>
 
@@ -336,11 +346,13 @@ function addMsg(m){
   d.className='m'+(m.sender_id===me.id?' me':'');
   const q=m.reply_to&&M[m.reply_to],rs={};(R[m.id]||[]).forEach(r=>(rs[r.emoji]=rs[r.emoji]||[]).push(r.user_id));
   let h=`<small>${esc(uname(m.sender_id))} · ${new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}${m.edited?' · edited':''}</small>`;
-  if(q)h+=`<div class="q">${esc(uname(q.sender_id))}: ${esc(q.deleted?'Deleted message':q.body||q.file_name||'File')}</div>`;
+  if(q)h+=`<div class="q">${esc(uname(q.sender_id))}: ${esc(q.deleted?'Deleted message':pretty(q.body)||q.file_name||'File')}</div>`;
   if(m.deleted)h+='<i class="mut">Message deleted</i>';
   else{
     if(m.file_url&&/^https:\/\//.test(m.file_url))h+=/^image\//.test(m.file_type||'')?`<a href="${esc(m.file_url)}" target="_blank" rel="noopener"><img src="${esc(m.file_url)}" alt=""></a>`:`<a class="fl" href="${esc(m.file_url)}" target="_blank" rel="noopener">📎 ${esc(m.file_name||'File')}</a>`;
-    if(m.body)h+=`<div>${esc(m.body)}</div>`;
+    const pm=m.body&&m.body.match(/^::party::([a-z0-9]{3,32})::(.*)$/);
+    if(pm)h+=`<div class="pty"><b>🎮 ${esc(pm[2])}</b><span>Eaglercraft party · code ${pm[1]}</span><div><button data-a="play" data-c="${pm[1]}">Play here</button><button class="g" data-a="tab" data-c="${pm[1]}">New tab</button></div></div>`;
+    else if(m.body)h+=`<div>${esc(m.body)}</div>`;
     h+='<button class="mb" data-a="menu" aria-label="Message actions">⋯</button>';
   }
   const k=Object.keys(rs);
@@ -358,8 +370,10 @@ $('msgs').onclick=e=>{
   document.querySelectorAll('.pop').forEach(p=>p.remove());
   if(!t||!d)return;const m=M[d.dataset.id];
   if(t.dataset.a==='re')return react(m.id,t.dataset.e);
+  if(t.dataset.a==='play')return playParty(t.dataset.c);
+  if(t.dataset.a==='tab')return void window.open(partyUrl(t.dataset.c),'_blank','noopener');
   const p=document.createElement('div');p.className='pop';
-  p.innerHTML=EM.map(x=>`<span data-p="${x}">${x}</span>`).join('')+'<button class="g" data-p="reply">Reply</button>'+(m.sender_id===me.id?(m.body?'<button class="g" data-p="edit">Edit</button>':'')+'<button class="g" data-p="del">Delete</button>':'');
+  p.innerHTML=EM.map(x=>`<span data-p="${x}">${x}</span>`).join('')+'<button class="g" data-p="reply">Reply</button>'+(m.sender_id===me.id?(m.body&&!/^::party::/.test(m.body)?'<button class="g" data-p="edit">Edit</button>':'')+'<button class="g" data-p="del">Delete</button>':'');
   p.onclick=async ev=>{
     const a=ev.target.dataset.p;if(!a)return;p.remove();
     if(EM.includes(a))react(m.id,a);
@@ -372,6 +386,7 @@ $('msgs').onclick=e=>{
 $('send').onsubmit=async e=>{
   e.preventDefault();const body=$('mi').value.trim();if(!body||!cur)return;$('mi').value='';
   if(edit){const id=edit.id;edit=null;bar();const {error}=await sb.from('messages').update({body,edited:true}).eq('id',id);if(error)alert(error.message);return}
+  if(await eagler(body))return;
   const row={conversation_id:cur,sender_id:me.id,body};if(rep)row.reply_to=rep.id;rep=null;bar();
   const {error}=await sb.from('messages').insert(row);if(error)alert(error.message);
 };
@@ -519,7 +534,7 @@ function ping(title,body,tag,conv){
 function notifyMsg(m){
   if(m.sender_id===me.id||m.deleted)return;
   const c=convs.find(c=>c.id===m.conversation_id),g=c&&c.is_group;
-  ping(g?cname(c):uname(m.sender_id),(g?uname(m.sender_id)+': ':'')+(m.body||'📎 '+(m.file_name||'File')),'c'+m.conversation_id,m.conversation_id);
+  ping(g?cname(c):uname(m.sender_id),(g?uname(m.sender_id)+': ':'')+(pretty(m.body)||'📎 '+(m.file_name||'File')),'c'+m.conversation_id,m.conversation_id);
 }
 function onAdded(r){
   if(r.user_id!==me.id)return;const c=convs.find(c=>c.id===r.conversation_id);
@@ -530,5 +545,45 @@ $('gh').onclick=async()=>{
   const {error}=await sb.auth.signInWithOAuth({provider:'github',options:{redirectTo:location.origin+location.pathname}});
   if(error)note(error.message);
 };
+
+/* ---------- @eaglercraft party create <event name> [| server] ---------- */
+const EAGLER_URL='https://minecraft3.33sjayakumar.workers.dev'; // your Eaglercraft launcher
+const DEFAULT_SERVER='zentic.cc';                                // used when no server is given
+const EG_SB='https://uwpcgccammspgzocjsco.supabase.co',EG_KEY='sb_publishable_VovyqA7vY-IVd2qke-sCRg_l1LdpMMV';
+const EG_ALPHA='abcdefghjkmnpqrstuvwxyz23456789';
+const partyUrl=c=>`${EAGLER_URL}/party=${c}`;
+const pretty=b=>{const m=b&&b.match(/^::party::([a-z0-9]{3,32})::(.*)$/);return m?'🎮 Party: '+m[2]:b};
+function egServer(v){let s=v.trim();if(!/^wss?:\/\//i.test(s))s='wss://'+s;try{const u=new URL(s);return /^wss?:$/.test(u.protocol)?u.href:null}catch{return null}}
+async function makeParty(name,server){
+  for(let i=0;i<5;i++){
+    const code=Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>EG_ALPHA[b%EG_ALPHA.length]).join('');
+    // same request your Create-a-party page makes (anon key), so the existing table rules apply
+    const r=await fetch(EG_SB+'/rest/v1/parties',{method:'POST',headers:{apikey:EG_KEY,Authorization:'Bearer '+EG_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({code,server,name})});
+    if(r.status===409)continue;
+    return r.ok?code:null;
+  }
+  return null;
+}
+async function eagler(text){
+  const m=text.match(/^@eaglercraft\b\s*(.*)$/i);if(!m)return false;
+  const mm=m[1].match(/^party\s+create\s+(.+)$/i);
+  if(!mm){toast('Try: @eaglercraft party create Friday build night');return true}
+  const [nameRaw,srvRaw]=mm[1].split('|'),name=nameRaw.trim().replace(/::/g,' ').slice(0,40);
+  const server=egServer(srvRaw&&srvRaw.trim()?srvRaw:DEFAULT_SERVER);
+  if(!name)return toast('Give your party a name.'),true;
+  if(!server)return toast('That server address doesn’t look right.'),true;
+  toast('Creating your party…');
+  const code=await makeParty(name,server);
+  if(!code)return toast('Couldn’t create the party. Try again.'),true;
+  // the invite is a normal message, so everyone in the group (or the other person in a DM) gets it and is notified
+  const {error}=await sb.from('messages').insert({conversation_id:cur,sender_id:me.id,body:`::party::${code}::${name}`});
+  if(error)alert(error.message);
+  return true;
+}
+function playParty(code){
+  $('pgt').textContent='🎮 Eaglercraft · '+code;$('pgo').onclick=()=>window.open(partyUrl(code),'_blank','noopener');
+  $('pgf').src=partyUrl(code);$('pg').hidden=false;
+}
+$('pgx').onclick=()=>{$('pgf').src='about:blank';$('pg').hidden=true};
 </script>
 </body></html>
